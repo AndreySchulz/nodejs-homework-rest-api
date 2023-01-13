@@ -17,7 +17,6 @@ const addContact = async (body) => {
 };
 
 const updateContact = async (contactId, body) => {
-  console.log("123123123123123123pp");
   return await Contact.findByIdAndUpdate({ _id: contactId }, body, {
     new: true,
   });
