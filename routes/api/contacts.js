@@ -9,17 +9,24 @@ const {
 } = require("../../models/contacts");
 
 const router = express.Router();
+
 const createSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
   phone: Joi.string().required(),
+  favorite: Joi.boolean(),
 }).required();
 
 const updateSchema = Joi.object({
   name: Joi.string(),
   email: Joi.string().email(),
   phone: Joi.string(),
+  favorite: Joi.boolean(),
 }).or("name", "email", "phone");
+
+const updateSchemaStatus = Joi.object({
+  favorite: Joi.boolean().required(),
+}).required();
 
 const validator = (schema, message) => (req, res, next) => {
   const body = req.body;
@@ -33,6 +40,7 @@ const validator = (schema, message) => (req, res, next) => {
 
   return next();
 };
+
 router.get("/", async (req, res, next) => {
   const ollContacts = await listContacts();
   res.set("Content-Type", "application/json").send(ollContacts);
@@ -72,6 +80,19 @@ router.delete("/:contactId", async (req, res, next) => {
 router.put(
   "/:contactId",
   validator(updateSchema, "missing fields"),
+  async (req, res, next) => {
+    const contactId = req.params.contactId;
+    const contact = await updateContact(contactId, req.body);
+    if (contact !== null) {
+      res.json(contact);
+      return;
+    }
+    res.status(404).json({ message: "Not found" });
+  }
+);
+router.patch(
+  "/:contactId/favorite",
+  validator(updateSchemaStatus, "missing field favorite"),
   async (req, res, next) => {
     const contactId = req.params.contactId;
     const contact = await updateContact(contactId, req.body);
