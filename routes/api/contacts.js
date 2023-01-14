@@ -6,7 +6,8 @@ const {
   removeContact,
   addContact,
   updateContact,
-} = require("../../models/contacts");
+} = require("../../servicess/contacts");
+const userMiddleware = require("../../middleware/middleware");
 
 const router = express.Router();
 
@@ -41,13 +42,13 @@ const validator = (schema, message) => (req, res, next) => {
   return next();
 };
 
-router.get("/", async (req, res, next) => {
+router.get("/", userMiddleware, async (req, res, next) => {
   const ollContacts = await listContacts();
   res.set("Content-Type", "application/json").send(ollContacts);
   // res.json({ ollContacts });
 });
 
-router.get("/:contactId", async (req, res, next) => {
+router.get("/:contactId", userMiddleware, async (req, res, next) => {
   const contactId = req.params.contactId;
   const contact = await getContactById(contactId);
   if (!contact) {
@@ -59,7 +60,9 @@ router.get("/:contactId", async (req, res, next) => {
 
 router.post(
   "/",
+
   validator(createSchema, "missing required name field"),
+  userMiddleware,
   async (req, res, next) => {
     const contact = req.body;
 
@@ -67,7 +70,7 @@ router.post(
   }
 );
 
-router.delete("/:contactId", async (req, res, next) => {
+router.delete("/:contactId", userMiddleware, async (req, res, next) => {
   const contactId = req.params.contactId;
   const isRemoveContact = await removeContact(contactId);
   if (!isRemoveContact) {
