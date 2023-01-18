@@ -1,5 +1,8 @@
 const express = require("express");
 const Joi = require("joi");
+var Jimp = require("jimp");
+const fs = require("fs").promises;
+const gravatar = require("gravatar");
 const { hashPassword, comparePassword } = require("../../password");
 const {
   addUser,
@@ -7,8 +10,9 @@ const {
   findById,
   updateUser,
 } = require("../../servicess/users");
-const { verifyToken, generateToken } = require("../../token");
+const { generateToken } = require("../../token");
 const userMiddleware = require("../../middleware/middleware");
+const uploads = require("../../middleware/uploads");
 
 const router = express.Router();
 
@@ -35,6 +39,8 @@ router.post(
   validator(signupSchema, "Bad Ошибка от Joi или другой библиотеки валидации"),
   async (req, res) => {
     const user = req.body;
+
+    user.avatarURL = gravatar.url(user.email);
 
     user.password = await hashPassword(user.password);
 
@@ -103,5 +109,34 @@ router.get("/current", userMiddleware, async (req, res) => {
 
   res.json({ email, subscription }).end();
 });
+
+router.patch(
+  "/avatars",
+  userMiddleware,
+  uploads.single("userAvatar"),
+  async (req, res) => {
+    const { id } = req.user;
+    const avatar = req.file.path;
+    const [, fileExtention] = req.file.mimetype.split("/");
+    const uploadsPath = `public/avatars/${id}.${fileExtention}`;
+
+    try {
+      Jimp.read(avatar)
+        .then((avatar) => {
+          return avatar.resize(250, 250).write(uploadsPath);
+        })
+        .catch((error) => {
+          next(error);
+        });
+
+      await fs.unlink(avatar);
+      await updateUser(id, { avatarURL: uploadsPath });
+
+      res.status(200).json({ avatarURL: uploadsPath });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 module.exports = router;

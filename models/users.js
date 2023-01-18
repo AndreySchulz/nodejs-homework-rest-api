@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const usersSchema = new mongoose.Schema({
+  avatarURL: String,
   password: {
     type: String,
     required: [true, "Password is required"],
