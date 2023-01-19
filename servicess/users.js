@@ -9,8 +9,8 @@ const findByEmail = async (email) => {
 const findById = async (id) => {
   return await Users.findOne({ _id: id });
 };
-const updateUser = async (id, token) => {
-  return await Users.findByIdAndUpdate({ _id: id }, token);
+const updateUser = async (id, newData) => {
+  return await Users.findByIdAndUpdate({ _id: id }, newData);
 };
 
 module.exports = {
