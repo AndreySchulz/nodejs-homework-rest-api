@@ -9,6 +9,8 @@ const {
   findByEmail,
   findById,
   updateUser,
+  verifyUser,
+  sendVerificationEmail,
 } = require("../../servicess/users");
 const { generateToken } = require("../../token");
 const userMiddleware = require("../../middleware/middleware");
@@ -45,7 +47,8 @@ router.post(
     user.password = await hashPassword(user.password);
 
     try {
-      const { email, subscription } = await addUser(user);
+      const { email, subscription, verificationToken } = await addUser(user);
+      sendVerificationEmail(email, verificationToken);
 
       res.status(201).json({ user: { email, subscription } }).end();
     } catch (err) {
@@ -109,6 +112,53 @@ router.get("/current", userMiddleware, async (req, res) => {
 
   res.json({ email, subscription }).end();
 });
+router.get("/verify/:verificationToken", async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+
+    const user = await verifyUser(
+      {
+        verificationToken,
+      },
+      { verificationToken: null, verify: true },
+      { new: true }
+    );
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({ message: "Verification successful" });
+  } catch (error) {
+    next(error);
+  }
+});
+router.post(
+  "/verify",
+  validator(signupSchema, "Bad Ошибка от Joi или другой библиотеки валидации"),
+  async (req, res, next) => {
+    const email = req.body.email;
+
+    try {
+      if (!email) {
+        res.status(400).json({ message: "missing required field email" });
+      }
+      const { verificationToken, verify } = await findByEmail(email);
+      if (verify) {
+        res
+          .status(400)
+          .json({ message: "Verification has already been passed" });
+      }
+
+      sendVerificationEmail(email, verificationToken);
+
+      res.status(200).json({ message: "Verification email sent" });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.patch(
   "/avatars",
