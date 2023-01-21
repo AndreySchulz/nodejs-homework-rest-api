@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
 
 const usersSchema = new mongoose.Schema({
   avatarURL: String,
@@ -19,6 +20,15 @@ const usersSchema = new mongoose.Schema({
   token: {
     type: String,
     default: null,
+  },
+  verify: {
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+    default: uuidv4(),
+    required: [true, "Verify token is required"],
   },
 });
 
